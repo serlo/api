@@ -1,0 +1,7 @@
+black ~= 19.10b0
+django ~= 3.0
+django-cors-headers ~= 3.0
+django-stubs ~= 1.4
+mypy ~= 0.761
+psycopg2 ~= 2.8
+requests ~= 2.22

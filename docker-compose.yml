@@ -1,0 +1,27 @@
+version: '3'
+services:
+  db:
+    image: postgres:9.6
+    environment:
+      - POSTGRES_PASSWORD=secret
+  api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    volumes:
+      - ./docker/api:/usr/src/app/docker/api:delegated
+      - ./src/app:/usr/src/app/app:delegated
+      - ./src/manage.py:/usr/src/app/manage.py:delegated
+    ports:
+      - '8000:8000'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: secret
+      DATABASE_NAME: postgres
+  graphiql:
+    image: npalm/graphiql
+    ports:
+      - '4000:4000'
+    environment:
+      API_URL: http://localhost:8000/graphql

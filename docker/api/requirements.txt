@@ -1,0 +1,5 @@
+django ~= 3.0
+django-cors-headers ~= 3.0
+graphene-django ~= 2.8
+psycopg2 ~= 2.8
+requests ~= 2.22

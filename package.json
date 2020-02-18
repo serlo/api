@@ -1,0 +1,41 @@
+{
+  "name": "@serlo/api",
+  "version": "0.0.0",
+  "license": "Apache-2.0",
+  "author": "Serlo Education e.V.",
+  "scripts": {
+    "start": "docker-compose up --build --detach",
+    "lint": "npm-run-all lint:*",
+    "lint:format-prettier": "yarn _prettier --check",
+    "lint:format-py": "yarn format:py --check",
+    "lint:types": "yarn _devtools mypy --strict",
+    "format": "npm-run-all format:*",
+    "format:prettier": "yarn _prettier --write",
+    "format:py": "yarn _devtools black . --target-version py38",
+    "test": "yarn m test",
+    "m": "docker-compose exec -T api python manage.py",
+    "m:deprecations": "docker-compose exec -T api python -W always manage.py",
+    "pip:install": "npm-run-all pip:install:*",
+    "pip:install:devtools": "docker-compose --file docker-compose-devtools.yml run -T --rm devtools sh -c \"pip uninstall --requirement docker/devtools/requirements.lock --yes && pip install --requirement docker/devtools/requirements.txt && pip freeze > docker/devtools/requirements.lock\"",
+    "pip:install:api": "docker-compose run -T --entrypoint \"\" --rm api sh -c \"pip uninstall --requirement docker/api/requirements.lock --yes && pip install --requirement docker/api/requirements.txt && pip freeze > docker/api/requirements.lock\"",
+    "pacts": "jest",
+    "pacts:publish": "ts-node scripts/publish-pacts",
+    "_devtools": "docker-compose --file docker-compose-devtools.yml run -T --rm devtools",
+    "_prettier": "prettier \"{{__tests__,scripts}/**/*,*}.{js,jsx,ts,tsx,json,md,yaml,yml,css,scss}\""
+  },
+  "devDependencies": {
+    "@pact-foundation/pact": "^9.0.0",
+    "@types/jest": "^25.0.0",
+    "@types/node-fetch": "^2.0.0",
+    "@types/rimraf": "^2.0.0",
+    "jest": "^25.0.0",
+    "node-fetch": "^2.0.0",
+    "npm-run-all": "^4.0.0",
+    "prettier": "^1.0.0",
+    "rimraf": "^3.0.0",
+    "ts-jest": "^25.0.0",
+    "ts-node": "^8.0.0",
+    "typescript": "^3.0.0"
+  },
+  "private": true
+}

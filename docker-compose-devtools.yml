@@ -1,0 +1,9 @@
+version: '3'
+services:
+  devtools:
+    build:
+      context: .
+      dockerfile: docker/devtools/Dockerfile
+    volumes:
+      - ./docker/devtools:/usr/src/app/docker/devtools:delegated
+      - ./src/app:/usr/src/app/app:delegated
