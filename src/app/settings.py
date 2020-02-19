@@ -6,6 +6,7 @@ ALLOWED_HOSTS = ["localhost", "api"]
 INSTALLED_APPS = [
     "corsheaders",
     "graphene_django",
+    "notifications.apps.NotificationsConfig",
 ]
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",

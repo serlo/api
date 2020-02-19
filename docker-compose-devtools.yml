@@ -7,3 +7,5 @@ services:
     volumes:
       - ./docker/devtools:/usr/src/app/docker/devtools:delegated
       - ./src/app:/usr/src/app/app:delegated
+      - ./src/notifications:/usr/src/app/notifications:delegated
+      - ./src/mypy.ini:/usr/src/app/mypy.ini:delegated

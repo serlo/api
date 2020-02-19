@@ -1,11 +1,17 @@
 import graphene
 
-
-class Query(graphene.ObjectType):
-    version = graphene.String()
-
-    def resolve_version(parent, info):
-        return "0.0.0"
+from notifications.schema import (
+    Query as NotificationsQuery,
+    Mutation as NotificationsMutation,
+)
 
 
-schema = graphene.Schema(query=Query)
+class Query(NotificationsQuery, graphene.ObjectType):
+    pass
+
+
+class Mutation(NotificationsMutation, graphene.ObjectType):
+    pass
+
+
+schema = graphene.Schema(query=Query, mutation=Mutation)
