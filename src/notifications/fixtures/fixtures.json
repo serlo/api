@@ -59,14 +59,5 @@
       "user": 2,
       "seen": true
     }
-  },
-  {
-    "model": "notifications.notification",
-    "pk": 4,
-    "fields": {
-      "event": 2,
-      "user": 2,
-      "seen": false
-    }
   }
 ]

@@ -41,6 +41,13 @@ def create_notification(payload: CreateNotificationPayload) -> Notification:
     return notification
 
 
+def change_notification_status(notification_id: int, seen: bool) -> Notification:
+    notification = Notification.objects.get(pk=notification_id)
+    notification.seen = seen
+    notification.save()
+    return notification
+
+
 def read_notification(payload: ReadNotificationPayload) -> Notification:
     notification = create_notification(payload)
     notification.seen = True

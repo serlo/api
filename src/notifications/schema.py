@@ -17,6 +17,12 @@ class User(graphene.ObjectType):
     id = graphene.String()
 
 
+# class CreateEventInput(graphene.InputObjectType):
+#     provider_id = graphene.String(required=True)
+#     id = graphene.String(required=True)
+#     created_at = graphene.Datetime(required=True)
+
+
 class EventInput(graphene.InputObjectType):
     provider_id = graphene.String(required=True)
     id = graphene.String(required=True)
@@ -74,9 +80,28 @@ def map_notification(n: models.Notification):
     return temp
 
 
-# class CreateEvent(graphene.Mutation):
-#     pass
-#
+class CreateEvent(graphene.Mutation):
+    class Arguments:
+        event = EventInput(required=True)
+        created_at = graphene.String()
+
+    event = graphene.Field(Event)
+    created_at = graphene.DateTime()
+
+    @staticmethod
+    def mutate(root, info, event, created_at):
+        e = tasks.create_event(
+            {
+                "event": {"id": event.id, "provider_id": event.provider_id},
+                "created_at": created_at,
+            }
+        )
+        return CreateEvent(
+            event={"id": e.event_id, "provider_id": e.provider_id},
+            created_at=e.created_at,
+        )
+
+
 class CreateNotification(graphene.Mutation):
     class Arguments:
         event = EventInput(required=True)
@@ -99,19 +124,32 @@ class CreateNotification(graphene.Mutation):
         return CreateNotification(**map_notification(n))
 
 
-class ChangeNotification(graphene.relay.ClientIDMutation):
+class ChangeNotificationStatus(graphene.relay.ClientIDMutation):
     class Input:
-        pass
+        seen = graphene.Boolean(required=True)
+
+    id = graphene.ID(required=True)
+    event = graphene.Field(Event)
+    user = graphene.Field(User)
+    created_at = graphene.DateTime()
+    seen = graphene.Boolean()
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
-        return
+        type, id = b64decode(input.get("client_mutation_id")).decode("utf-8").split("-")
+        if type == "notification":
+            n = tasks.change_notification_status(
+                notification_id=id, seen=input.get("seen")
+            )
+            return ChangeNotificationStatus(**map_notification(n))
+        else:
+            raise Exception("Provided id does not point to notification")
 
 
 class Query(graphene.ObjectType):
     notification = Node.Field(Notification)
     notifications = graphene.relay.ConnectionField(
-        NotificationConnection, user=graphene.Argument(UserInput),
+        NotificationConnection, user=graphene.Argument(UserInput)
     )
 
     def resolve_notifications(self, info, **payload):
@@ -143,8 +181,9 @@ class Query(graphene.ObjectType):
 
 
 class Mutation(graphene.ObjectType):
+    create_event = CreateEvent.Field()
     create_notification = CreateNotification.Field()
-    change_notification = ChangeNotification.Field()
+    change_notification_status = ChangeNotificationStatus.Field()
 
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
