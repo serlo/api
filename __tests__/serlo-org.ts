@@ -29,72 +29,136 @@ afterAll(async () => {
   await pact.finalize()
 })
 
-test('Resolving the alias of a page', async () => {
-  await addResolveByAliasInteraction({
-    request: {
-      instance: 'de',
-      path: '/mathe'
-    },
-    response: {
-      id: 19767,
-      discriminator: 'page'
-    }
-  })
-  const response = await executeQuery(`
-    {
-      uuid(alias: {
-        instance: "de",
-        path: "/mathe"
-      }) {
-        __typename,
-        ...on PageUuid {
-          id
+describe('Page', () => {
+  test('by alias', async () => {
+    await addResolveByAliasInteraction({
+      request: {
+        instance: 'de',
+        path: '/mathe'
+      },
+      response: {
+        id: 19767,
+        discriminator: 'page'
+      }
+    })
+    const response = await executeQuery(`
+      {
+        uuid(alias: {
+          instance: "de",
+          path: "/mathe"
+        }) {
+          __typename,
+          ...on PageUuid {
+            id
+          }
         }
       }
-    }
-  `)
-  expect(response).toEqual({
-    data: {
-      uuid: {
-        __typename: 'PageUuid',
-        id: 19767
+    `)
+    expect(response).toEqual({
+      data: {
+        uuid: {
+          __typename: 'PageUuid',
+          id: 19767
+        }
       }
-    }
+    })
+  })
+
+  test('by id', async () => {
+    await addResolveByIdInteraction({
+      request: 19767,
+      response: {
+        id: 19767,
+        discriminator: 'page'
+      }
+    })
+    const response = await executeQuery(`
+      {
+        uuid(id: 19767) {
+          __typename,
+          ...on PageUuid {
+            id
+          }
+        }
+      }
+    `)
+    expect(response).toEqual({
+      data: {
+        uuid: {
+          __typename: 'PageUuid',
+          id: 19767
+        }
+      }
+    })
   })
 })
 
-test('Resolving the alias of an article', async () => {
-  await addResolveByAliasInteraction({
-    request: {
-      instance: 'de',
-      path: '/mathe/funktionen/uebersicht-aller-artikel-zu-funktionen/parabel'
-    },
-    response: {
-      id: 1855,
-      discriminator: 'entity',
-      type: 'article'
-    }
-  })
-  const response = await executeQuery(`
-    {
-      uuid(alias: {
-        instance: "de",
-        path: "/mathe/funktionen/uebersicht-aller-artikel-zu-funktionen/parabel"
-      }) {
-        __typename,
-        ...on ArticleUuid {
-          id
+describe('Entity', () => {
+  describe('Article', () => {
+    test('by alias', async () => {
+      await addResolveByAliasInteraction({
+        request: {
+          instance: 'de',
+          path:
+            '/mathe/funktionen/uebersicht-aller-artikel-zu-funktionen/parabel'
+        },
+        response: {
+          id: 1855,
+          discriminator: 'entity',
+          type: 'article'
         }
-      }
-    }
-  `)
-  expect(response).toEqual({
-    data: {
-      uuid: {
-        __typename: 'ArticleUuid',
-        id: 1855
-      }
-    }
+      })
+      const response = await executeQuery(`
+        {
+          uuid(alias: {
+            instance: "de",
+            path: "/mathe/funktionen/uebersicht-aller-artikel-zu-funktionen/parabel"
+          }) {
+            __typename,
+            ...on ArticleUuid {
+              id
+            }
+          }
+        }
+      `)
+      expect(response).toEqual({
+        data: {
+          uuid: {
+            __typename: 'ArticleUuid',
+            id: 1855
+          }
+        }
+      })
+    })
+
+    test('by id', async () => {
+      await addResolveByIdInteraction({
+        request: 1855,
+        response: {
+          id: 1855,
+          discriminator: 'entity',
+          type: 'article'
+        }
+      })
+      const response = await executeQuery(`
+        {
+          uuid(id: 1855) {
+            __typename,
+            ...on ArticleUuid {
+              id
+            }
+          }
+        }
+      `)
+      expect(response).toEqual({
+        data: {
+          uuid: {
+            __typename: 'ArticleUuid',
+            id: 1855
+          }
+        }
+      })
+    })
   })
 })
 
@@ -129,6 +193,33 @@ async function addResolveByAliasInteraction<
   })
 }
 
+async function addResolveByIdInteraction<
+  T extends { discriminator: string; id: number }
+>(payload: { request: number; response: T }) {
+  const { request, response } = payload
+  await pact.addInteraction({
+    state: `${request} is an ${response.discriminator} id`,
+    uponReceiving: `resolve ${request}`,
+    withRequest: {
+      method: 'POST',
+      path: '/api/resolve-id',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: {
+        id: request
+      }
+    },
+    willRespondWith: {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: response
+    }
+  })
+}
+
 async function executeQuery(query: string) {
   const response = await fetch('http://localhost:8000/graphql', {
     method: 'POST',
@@ -141,7 +232,3 @@ async function executeQuery(query: string) {
   })
   return response.json()
 }
-
-// TODO: resolve by id
-// TODO: different layers for that request (e.g. number of joins?) So that the network request / sql query isn't as bad
-// TODO: handle not found

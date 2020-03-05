@@ -40,21 +40,27 @@ class Query(graphene.ObjectType):
     uuid = graphene.Field(Uuid, alias=Alias(), id=graphene.Int())
 
     def resolve_uuid(self, info, **payload):
-        # by alias
-        alias_payload = payload.get("alias")
-        if alias_payload:
-            # TODO:
-            response = requests.post(
-                "http://host.docker.internal:9009/api/resolve-alias",
-                json={
-                    "instance": alias_payload.get("instance"),
-                    "path": alias_payload.get("path"),
-                },
-            )
-            data = response.json()
-            if data["discriminator"] == "page":
-                return PageUuid(id=data["id"])
-            if data["discriminator"] == "entity":
-                if data["type"] == "article":
-                    return ArticleUuid(id=data["id"])
-            return UnknownUuid(id=data["id"], discriminator=data["discriminator"])
+        def fetch_info():
+            alias_payload = payload.get("alias")
+            if alias_payload:
+                return requests.post(
+                    "http://host.docker.internal:9009/api/resolve-alias",
+                    json={
+                        "instance": alias_payload.get("instance"),
+                        "path": alias_payload.get("path"),
+                    },
+                )
+            id_payload = payload.get("id")
+            if id_payload:
+                return requests.post(
+                    "http://host.docker.internal:9009/api/resolve-id",
+                    json={"id": id_payload},
+                )
+
+        data = fetch_info().json()
+        if data["discriminator"] == "page":
+            return PageUuid(id=data["id"])
+        if data["discriminator"] == "entity":
+            if data["type"] == "article":
+                return ArticleUuid(id=data["id"])
+        return UnknownUuid(id=data["id"], discriminator=data["discriminator"])
