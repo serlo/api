@@ -19,7 +19,11 @@ class PageUuid(AbstractUuid):
 
 
 class UnknownUuid(AbstractUuid):
-    pass
+    def __init__(self, *args, **data):
+        super().__init__(*args, **data)
+        self.discriminator = data["discriminator"]
+
+    discriminator = graphene.String()
 
 
 class Uuid(graphene.Union):
@@ -53,4 +57,4 @@ class Query(graphene.ObjectType):
             if data["discriminator"] == "entity":
                 if data["type"] == "article":
                     return ArticleUuid(id=data["id"])
-            return UnknownUuid(id=data["id"])
+            return UnknownUuid(id=data["id"], discriminator=data["discriminator"])
