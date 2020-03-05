@@ -6,6 +6,7 @@ ALLOWED_HOSTS = ["localhost", "api"]
 INSTALLED_APPS = [
     "corsheaders",
     "graphene_django",
+    "serlo_org.apps.SerloOrgConfig",
 ]
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",

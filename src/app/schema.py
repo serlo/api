@@ -1,11 +1,10 @@
 import graphene
 
+from serlo_org.schema import Query as SerloOrgQuery
 
-class Query(graphene.ObjectType):
-    version = graphene.String()
 
-    def resolve_version(parent, info):
-        return "0.0.0"
+class Query(SerloOrgQuery, graphene.ObjectType):
+    pass
 
 
 schema = graphene.Schema(query=Query)
