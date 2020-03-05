@@ -10,7 +10,7 @@ class AbstractUuid(graphene.ObjectType):
     id = graphene.Int()
 
 
-class UnknownUuid(AbstractUuid):
+class ArticleUuid(AbstractUuid):
     pass
 
 
@@ -18,9 +18,13 @@ class PageUuid(AbstractUuid):
     pass
 
 
+class UnknownUuid(AbstractUuid):
+    pass
+
+
 class Uuid(graphene.Union):
     class Meta:
-        types = (PageUuid, UnknownUuid)
+        types = (ArticleUuid, PageUuid, UnknownUuid)
 
 
 class Alias(graphene.InputObjectType):
@@ -44,8 +48,9 @@ class Query(graphene.ObjectType):
                 },
             )
             data = response.json()
-            if data["type"] == "page":
+            if data["discriminator"] == "page":
                 return PageUuid(id=data["id"])
-            if data["id"]:
-                return UnknownUuid(id=data["id"])
-        return UnknownUuid(id=123)
+            if data["discriminator"] == "entity":
+                if data["type"] == "article":
+                    return ArticleUuid(id=data["id"])
+            return UnknownUuid(id=data["id"])

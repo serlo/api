@@ -51,7 +51,7 @@ test('Resolving the alias of a page', async () => {
       },
       body: {
         id: 19767,
-        type: 'page'
+        discriminator: 'page'
       }
     }
   })
@@ -81,6 +81,66 @@ test('Resolving the alias of a page', async () => {
       uuid: {
         __typename: 'PageUuid',
         id: 19767
+      }
+    }
+  })
+})
+
+test('Resolving the alias of an article', async () => {
+  await pact.addInteraction({
+    state:
+      '/mathe/funktionen/uebersicht-aller-artikel-zu-funktionen/parabel is alias of /entity/view/1855 in instance de',
+    uponReceiving:
+      'resolve de.serlo.org/mathe/funktionen/uebersicht-aller-artikel-zu-funktionen/parabel',
+    withRequest: {
+      method: 'POST',
+      path: '/api/resolve-alias',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: {
+        instance: 'de',
+        path: '/mathe/funktionen/uebersicht-aller-artikel-zu-funktionen/parabel'
+      }
+    },
+    willRespondWith: {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: {
+        id: 1855,
+        discriminator: 'entity',
+        type: 'article'
+      }
+    }
+  })
+  const response = await fetch('http://localhost:8000/graphql', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      query: `
+        {
+          uuid(alias: {
+            instance: "de",
+            path: "/mathe/funktionen/uebersicht-aller-artikel-zu-funktionen/parabel"
+          }) {
+            __typename,
+            ...on ArticleUuid {
+              id,
+            }
+          }
+        }
+      `
+    })
+  })
+  expect(await response.json()).toEqual({
+    data: {
+      uuid: {
+        __typename: 'ArticleUuid',
+        id: 1855
       }
     }
   })
