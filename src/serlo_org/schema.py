@@ -1,5 +1,10 @@
 import graphene
+import logging
 import requests
+
+from shared.graphql import get_fields
+
+logger = logging.getLogger(__name__)
 
 
 class AbstractUuid(graphene.ObjectType):
@@ -23,6 +28,7 @@ class Instance(graphene.Enum):
 class License(graphene.ObjectType):
     id = graphene.Int()
     instance = Instance()
+    default = graphene.Boolean()
     title = graphene.String()
     url = graphene.String()
     content = graphene.String()
@@ -50,7 +56,6 @@ class AbstractEntity(AbstractUuid):
     instance = Instance()
     license = graphene.Field(License)
     current_revision = graphene.Field(ArticleRevision)
-    # date = graphene.DateTime
 
 
 class ArticleUuid(AbstractEntity):
@@ -79,34 +84,59 @@ class Alias(graphene.InputObjectType):
     path = graphene.String(required=True)
 
 
-class Query(graphene.ObjectType):
-    uuid = graphene.Field(Uuid, alias=Alias(), id=graphene.Int())
+def resolve_license(_parent, _info, **payload):
+    data = requests.post(
+        "http://host.docker.internal:9009/api/license", json={"id": payload.get("id")},
+    ).json()
+    return {
+        "id": data["id"],
+        "instance": data["instance"],
+        "default": data["default"],
+        "title": data["title"],
+        "url": data["url"],
+        "content": data["content"],
+        "agreement": data["agreement"],
+        "icon_href": data["iconHref"],
+    }
 
-    def resolve_uuid(self, info, **payload):
-        def fetch_info():
-            alias_payload = payload.get("alias")
-            if alias_payload:
-                return requests.post(
-                    "http://host.docker.internal:9009/api/url-alias",
-                    json={
-                        "instance": alias_payload.get("instance"),
-                        "path": alias_payload.get("path"),
-                    },
-                )
-            id_payload = payload.get("id")
-            if id_payload:
-                return requests.post(
-                    "http://host.docker.internal:9009/api/uuid",
-                    json={"id": id_payload},
-                )
 
-        data = fetch_info().json()
-        if data["discriminator"] == "page":
-            return PageUuid(id=data["id"])
-        if data["discriminator"] == "entity":
-            if data["type"] == "article":
-                article = ArticleUuid(id=data["id"], instance=data["instance"])
-                article.current_revision = {"id": data["currentRevisionId"]}
+def resolve_uuid(_parent, info, **payload):
+    def fetch_info():
+        alias_payload = payload.get("alias")
+        if alias_payload:
+            return requests.post(
+                "http://host.docker.internal:9009/api/url-alias",
+                json={
+                    "instance": alias_payload.get("instance"),
+                    "path": alias_payload.get("path"),
+                },
+            )
+        id_payload = payload.get("id")
+        if id_payload:
+            return requests.post(
+                "http://host.docker.internal:9009/api/uuid", json={"id": id_payload},
+            )
+
+    requested_fields = get_fields(info)
+    logger.error(requested_fields)
+    data = fetch_info().json()
+    if data["discriminator"] == "page":
+        return PageUuid(id=data["id"])
+    if data["discriminator"] == "entity":
+        if data["type"] == "article":
+            article = ArticleUuid(id=data["id"], instance=data["instance"])
+            article.current_revision = {"id": data["currentRevisionId"]}
+
+            if "license" in requested_fields["ArticleUuid"]:
                 article.license = {"id": data["licenseId"]}
-                return article
-        return UnknownUuid(id=data["id"], discriminator=data["discriminator"])
+                if list(requested_fields["ArticleUuid"]["license"].keys()) > ["id"]:
+                    article.license = resolve_license(None, info, id=data["licenseId"])
+            return article
+    return UnknownUuid(id=data["id"], discriminator=data["discriminator"])
+
+
+class Query(graphene.ObjectType):
+    license = graphene.Field(
+        License, id=graphene.Int(required=True), resolver=resolve_license
+    )
+    uuid = graphene.Field(Uuid, alias=Alias(), id=graphene.Int(), resolver=resolve_uuid)

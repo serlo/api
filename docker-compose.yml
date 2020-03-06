@@ -12,6 +12,7 @@ services:
       - ./docker/api:/usr/src/app/docker/api:delegated
       - ./src/app:/usr/src/app/app:delegated
       - ./src/serlo_org:/usr/src/app/serlo_org:delegated
+      - ./src/shared:/usr/src/app/shared:delegated
       - ./src/manage.py:/usr/src/app/manage.py:delegated
     ports:
       - '8000:8000'
