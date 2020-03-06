@@ -486,7 +486,7 @@ async function addUuidInteraction<
 >(payload: { request: number; response: T }) {
   const { request, response } = payload
   await pact.addInteraction({
-    state: `${request} is an ${response.discriminator} id`,
+    state: `uuid ${request} is of discriminator ${response.discriminator}`,
     uponReceiving: `resolve uuid ${request}`,
     withRequest: {
       method: 'POST',
