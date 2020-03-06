@@ -31,7 +31,7 @@ afterAll(async () => {
 
 describe('Page', () => {
   test('by alias', async () => {
-    await addResolveByAliasInteraction({
+    await addUrlAliasInteraction({
       request: {
         instance: 'de',
         path: '/mathe'
@@ -44,7 +44,7 @@ describe('Page', () => {
     const response = await executeQuery(`
       {
         uuid(alias: {
-          instance: "de",
+          instance: de,
           path: "/mathe"
         }) {
           __typename,
@@ -65,7 +65,7 @@ describe('Page', () => {
   })
 
   test('by id', async () => {
-    await addResolveByIdInteraction({
+    await addUuidInteraction({
       request: 19767,
       response: {
         id: 19767,
@@ -96,7 +96,7 @@ describe('Page', () => {
 describe('Entity', () => {
   describe('Article', () => {
     test('by alias', async () => {
-      await addResolveByAliasInteraction({
+      await addUrlAliasInteraction({
         request: {
           instance: 'de',
           path:
@@ -105,18 +105,28 @@ describe('Entity', () => {
         response: {
           id: 1855,
           discriminator: 'entity',
-          type: 'article'
+          type: 'article',
+          instance: 'de',
+          currentRevisionId: 30674,
+          licenseId: 1
         }
       })
       const response = await executeQuery(`
         {
           uuid(alias: {
-            instance: "de",
+            instance: de,
             path: "/mathe/funktionen/uebersicht-aller-artikel-zu-funktionen/parabel"
           }) {
             __typename,
             ...on ArticleUuid {
               id
+              instance
+              currentRevision {
+                id
+              }
+              license {
+                id
+              }
             }
           }
         }
@@ -125,19 +135,29 @@ describe('Entity', () => {
         data: {
           uuid: {
             __typename: 'ArticleUuid',
-            id: 1855
+            id: 1855,
+            instance: 'de',
+            currentRevision: {
+              id: 30674
+            },
+            license: {
+              id: 1
+            }
           }
         }
       })
     })
 
     test('by id', async () => {
-      await addResolveByIdInteraction({
+      await addUuidInteraction({
         request: 1855,
         response: {
           id: 1855,
           discriminator: 'entity',
-          type: 'article'
+          type: 'article',
+          instance: 'de',
+          currentRevisionId: 30674,
+          licenseId: 1
         }
       })
       const response = await executeQuery(`
@@ -146,6 +166,13 @@ describe('Entity', () => {
             __typename,
             ...on ArticleUuid {
               id
+              instance
+              currentRevision {
+                id
+              }
+              license {
+                id
+              }
             }
           }
         }
@@ -154,7 +181,14 @@ describe('Entity', () => {
         data: {
           uuid: {
             __typename: 'ArticleUuid',
-            id: 1855
+            id: 1855,
+            instance: 'de',
+            currentRevision: {
+              id: 30674
+            },
+            license: {
+              id: 1
+            }
           }
         }
       })
@@ -162,7 +196,7 @@ describe('Entity', () => {
   })
 })
 
-async function addResolveByAliasInteraction<
+async function addUrlAliasInteraction<
   T extends { discriminator: string; id: number }
 >(payload: { request: { instance: string; path: string }; response: T }) {
   const {
@@ -174,7 +208,7 @@ async function addResolveByAliasInteraction<
     uponReceiving: `resolve ${instance}.serlo.org${path}`,
     withRequest: {
       method: 'POST',
-      path: '/api/resolve-alias',
+      path: '/api/url-alias',
       headers: {
         'Content-Type': 'application/json'
       },
@@ -193,7 +227,7 @@ async function addResolveByAliasInteraction<
   })
 }
 
-async function addResolveByIdInteraction<
+async function addUuidInteraction<
   T extends { discriminator: string; id: number }
 >(payload: { request: number; response: T }) {
   const { request, response } = payload
@@ -202,7 +236,7 @@ async function addResolveByIdInteraction<
     uponReceiving: `resolve ${request}`,
     withRequest: {
       method: 'POST',
-      path: '/api/resolve-id',
+      path: '/api/uuid',
       headers: {
         'Content-Type': 'application/json'
       },
