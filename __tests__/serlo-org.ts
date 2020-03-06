@@ -48,7 +48,7 @@ describe('Page', () => {
           path: "/mathe"
         }) {
           __typename,
-          ...on PageUuid {
+          ...on Page {
             id
           }
         }
@@ -57,7 +57,7 @@ describe('Page', () => {
     expect(response).toEqual({
       data: {
         uuid: {
-          __typename: 'PageUuid',
+          __typename: 'Page',
           id: 19767
         }
       }
@@ -76,7 +76,7 @@ describe('Page', () => {
       {
         uuid(id: 19767) {
           __typename,
-          ...on PageUuid {
+          ...on Page {
             id
           }
         }
@@ -85,7 +85,7 @@ describe('Page', () => {
     expect(response).toEqual({
       data: {
         uuid: {
-          __typename: 'PageUuid',
+          __typename: 'Page',
           id: 19767
         }
       }
@@ -118,7 +118,7 @@ describe('Entity', () => {
             path: "/mathe/funktionen/uebersicht-aller-artikel-zu-funktionen/parabel"
           }) {
             __typename,
-            ...on ArticleUuid {
+            ...on Article {
               id
               instance
               currentRevision {
@@ -134,7 +134,7 @@ describe('Entity', () => {
       expect(response).toEqual({
         data: {
           uuid: {
-            __typename: 'ArticleUuid',
+            __typename: 'Article',
             id: 1855,
             instance: 'de',
             currentRevision: {
@@ -201,7 +201,7 @@ describe('Entity', () => {
             path: "/mathe/funktionen/uebersicht-aller-artikel-zu-funktionen/parabel"
           }) {
             __typename,
-            ...on ArticleUuid {
+            ...on Article {
               id
               instance
               currentRevision {
@@ -218,7 +218,7 @@ describe('Entity', () => {
       expect(response).toEqual({
         data: {
           uuid: {
-            __typename: 'ArticleUuid',
+            __typename: 'Article',
             id: 1855,
             instance: 'de',
             currentRevision: {
@@ -227,6 +227,72 @@ describe('Entity', () => {
             license: {
               id: 1,
               title: 'title'
+            }
+          }
+        }
+      })
+    })
+
+    test('by alias (w/ currentRevision)', async () => {
+      await addUrlAliasInteraction({
+        request: {
+          instance: 'de',
+          path:
+            '/mathe/funktionen/uebersicht-aller-artikel-zu-funktionen/parabel'
+        },
+        response: {
+          id: 1855,
+          discriminator: 'entity',
+          type: 'article',
+          instance: 'de',
+          currentRevisionId: Matchers.integer(30674),
+          licenseId: Matchers.integer(1)
+        }
+      })
+      await addUuidInteraction({
+        request: 30674,
+        response: {
+          id: 30674,
+          discriminator: 'entityRevision',
+          type: 'article',
+          fields: {
+            title: Matchers.string('title'),
+            content: Matchers.string('content'),
+            changes: Matchers.string('changes')
+          }
+        }
+      })
+      const response = await executeQuery(`
+        {
+          uuid(alias: {
+            instance: de,
+            path: "/mathe/funktionen/uebersicht-aller-artikel-zu-funktionen/parabel"
+          }) {
+            __typename,
+            ...on Article {
+              id
+              instance
+              currentRevision {
+                id
+                title
+                content
+                changes
+              }
+            }
+          }
+        }
+      `)
+      expect(response).toEqual({
+        data: {
+          uuid: {
+            __typename: 'Article',
+            id: 1855,
+            instance: 'de',
+            currentRevision: {
+              id: 30674,
+              title: 'title',
+              content: 'content',
+              changes: 'changes'
             }
           }
         }
@@ -249,7 +315,7 @@ describe('Entity', () => {
         {
           uuid(id: 1855) {
             __typename,
-            ...on ArticleUuid {
+            ...on Article {
               id
               instance
               currentRevision {
@@ -265,7 +331,7 @@ describe('Entity', () => {
       expect(response).toEqual({
         data: {
           uuid: {
-            __typename: 'ArticleUuid',
+            __typename: 'Article',
             id: 1855,
             instance: 'de',
             currentRevision: {
@@ -339,6 +405,48 @@ test('License', async () => {
         iconHref: 'iconHref'
       }
     }
+  })
+})
+
+describe('EntityRevision', () => {
+  test('by id', async () => {
+    await addUuidInteraction({
+      request: 30674,
+      response: {
+        id: 30674,
+        discriminator: 'entityRevision',
+        type: 'article',
+        fields: {
+          title: Matchers.string('title'),
+          content: Matchers.string('content'),
+          changes: Matchers.string('changes')
+        }
+      }
+    })
+    const response = await executeQuery(`
+        {
+          uuid(id: 30674) {
+            __typename,
+            ...on ArticleRevision {
+              id
+              title
+              content
+              changes
+            }
+          }
+        }
+      `)
+    expect(response).toEqual({
+      data: {
+        uuid: {
+          __typename: 'ArticleRevision',
+          id: 30674,
+          title: 'title',
+          content: 'content',
+          changes: 'changes'
+        }
+      }
+    })
   })
 })
 

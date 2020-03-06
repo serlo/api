@@ -58,11 +58,11 @@ class AbstractEntity(AbstractUuid):
     current_revision = graphene.Field(ArticleRevision)
 
 
-class ArticleUuid(AbstractEntity):
+class Article(AbstractEntity):
     pass
 
 
-class PageUuid(AbstractUuid):
+class Page(AbstractUuid):
     pass
 
 
@@ -76,7 +76,7 @@ class UnknownUuid(AbstractUuid):
 
 class Uuid(graphene.Union):
     class Meta:
-        types = (ArticleUuid, PageUuid, UnknownUuid)
+        types = (Article, ArticleRevision, Page, UnknownUuid)
 
 
 class Alias(graphene.InputObjectType):
@@ -121,17 +121,30 @@ def resolve_uuid(_parent, info, **payload):
     logger.error(requested_fields)
     data = fetch_info().json()
     if data["discriminator"] == "page":
-        return PageUuid(id=data["id"])
+        return Page(id=data["id"])
     if data["discriminator"] == "entity":
         if data["type"] == "article":
-            article = ArticleUuid(id=data["id"], instance=data["instance"])
-            article.current_revision = {"id": data["currentRevisionId"]}
-
-            if "license" in requested_fields["ArticleUuid"]:
+            requested_fields = requested_fields["Article"]
+            article = Article(id=data["id"], instance=data["instance"])
+            if "currentRevision" in requested_fields:
+                article.current_revision = {"id": data["currentRevisionId"]}
+                if list(requested_fields["currentRevision"].keys()) > ["id"]:
+                    article.current_revision = resolve_uuid(
+                        None, info, id=data["currentRevisionId"]
+                    )
+            if "license" in requested_fields:
                 article.license = {"id": data["licenseId"]}
-                if list(requested_fields["ArticleUuid"]["license"].keys()) > ["id"]:
+                if list(requested_fields["license"].keys()) > ["id"]:
                     article.license = resolve_license(None, info, id=data["licenseId"])
             return article
+    if data["discriminator"] == "entityRevision":
+        if data["type"] == "article":
+            revision = ArticleRevision(id=data["id"])
+            revision.title = data["fields"]["title"]
+            revision.content = data["fields"]["content"]
+            revision.changes = data["fields"]["changes"]
+            return revision
+
     return UnknownUuid(id=data["id"], discriminator=data["discriminator"])
 
 
